@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from cleo.exceptions import CleoValueError
 from cleo.formatters.formatter import Formatter
 
 
@@ -101,3 +102,19 @@ def test_format_and_wrap_undecorated(text: str, width: int, expected: str) -> No
     formatter = Formatter(False)
 
     assert formatter.format_and_wrap(text, width) == expected
+
+
+@pytest.mark.parametrize("decorated", [False, True])
+@pytest.mark.parametrize("width", [0, 3])
+def test_remove_format_restores_decoration_after_invalid_color(
+    decorated: bool, width: int
+) -> None:
+    formatter = Formatter(decorated)
+    message = "<info>abcdef</info>"
+    expected = Formatter(decorated).format_and_wrap(message, width)
+
+    with pytest.raises(CleoValueError, match="is an invalid color"):
+        formatter.remove_format("<fg=not-a-color>text</>")
+
+    assert formatter.is_decorated() is decorated
+    assert formatter.format_and_wrap(message, width) == expected
